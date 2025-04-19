@@ -19,7 +19,7 @@ To start the server, run the following command in the terminal:
 go run main.go
 ```
 
-The server will start on port 8080 by default. You should see a message indicating that the server is running.
+The server will start on the address specified in `config.json` (default is `localhost:8080`). You should see a message indicating that the server is running.
 
 ## Using the URL Shortener
 
@@ -44,6 +44,24 @@ Response:
 ### Accessing the Original URL
 
 To access the original URL, simply visit the shortened URL in your browser or make a GET request to it. For example, if the shortened URL is `http://localhost:8080/AbCdEf`, navigating to this URL will redirect you to the original long URL.
+
+## Configuration for Deployment
+
+To deploy the server on a different address, domain, or with HTTPS, edit the `config.json` file:
+
+```json
+{
+    "server_address": "yourdomain.com:port",
+    "protocol": "https",
+    "bind_address": ":8080"
+}
+```
+
+- Update the `server_address` field with your desired domain and port for URL generation. If no port is specified, the default port based on the protocol (80 for HTTP, 443 for HTTPS) will be used in generated URLs.
+- Update the `protocol` field to `https` if you are using SSL/TLS for secure connections. The default is `http`. This will be used when generating shortened URLs.
+- Update the `bind_address` field with the address and port the server should listen on. This can be different from `server_address` for deployment scenarios (e.g., behind a proxy). The default is `:8080`.
+
+Note: Setting up HTTPS requires additional configuration for SSL certificates which is not covered in this basic implementation. Ensure your server is configured with valid certificates before changing the protocol to `https`. Also, binding to privileged ports like 80 or 443 may require elevated permissions.
 
 ## Notes
 

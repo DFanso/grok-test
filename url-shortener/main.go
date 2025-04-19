@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -72,7 +74,7 @@ func shortenHandler(store *URLStore) http.HandlerFunc {
 		response := struct {
 			ShortURL string `json:"short_url"`
 		}{
-			ShortURL: fmt.Sprintf("http://localhost:8080/%s", shortURL),
+			ShortURL: fmt.Sprintf("%s://%s/%s", protocol, serverAddress, shortURL),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -92,6 +94,39 @@ func redirectHandler(store *URLStore) http.HandlerFunc {
 }
 
 func main() {
+	// Read configuration
+	configData, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		log.Fatal("Error reading config file:", err)
+	}
+
+	var config struct {
+		ServerAddress string `json:"server_address"`
+		Protocol      string `json:"protocol"`
+		BindAddress   string `json:"bind_address"`
+	}
+	if err := json.Unmarshal(configData, &config); err != nil {
+		log.Fatal("Error parsing config file:", err)
+	}
+	serverAddress = config.ServerAddress
+	protocol = config.Protocol
+	bindAddress = config.BindAddress
+	if protocol == "" {
+		protocol = "http" // Default to http if not specified
+	}
+	if bindAddress == "" {
+		bindAddress = ":8080" // Default bind address if not specified
+	}
+
+	// Check if server address contains a port for URL generation, if not append default port based on protocol
+	if !strings.Contains(serverAddress, ":") {
+		if protocol == "https" {
+			serverAddress = serverAddress + ":443"
+		} else {
+			serverAddress = serverAddress + ":80"
+		}
+	}
+
 	store := NewURLStore()
 	http.HandleFunc("/shorten", shortenHandler(store))
 
@@ -108,8 +143,13 @@ func main() {
 		redirectHandler(store)(w, r)
 	})
 
-	log.Println("Server starting on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	log.Println("Server starting on", bindAddress, "for URLs using", serverAddress)
+	if err := http.ListenAndServe(bindAddress, nil); err != nil {
 		log.Fatal(err)
 	}
 }
+
+// serverAddress, protocol, and bindAddress are global variables to store the configured server settings
+var serverAddress string
+var protocol string
+var bindAddress string

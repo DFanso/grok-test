@@ -1,0 +1,5 @@
+{
+    "server_address": "localhost",
+    "protocol": "http",
+    "bind_address": ":8080"
+}
